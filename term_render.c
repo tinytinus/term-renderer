@@ -84,19 +84,22 @@ int main() {
 				return 1;
 		}
 
-		for (int i = 0; i < triangle.point_count; i++) {
-				printf("Point %d: (%f, %f)\n", i, triangle.points[i].x, triangle.points[i].y);
-		}
-
-		return 0;
-
-
-		/*
 		while (true) {
 				clear();
+				
+				for (int i = 0; i < triangle.point_count; i++) {
+						printf("%d:(%f, %f)", i, triangle.points[i].x, triangle.points[i].y);
+				}
+				printf("\n");
 
-				refresh();
-				usleep(100000);
+				float angle = 3.14159 / 4;	
+
+				for (int j = 0; j < triangle.point_count; j++) {
+						triangle.points[j] = rotatePoint(triangle.points[j], angle);
+				}
+
+				//refresh();
+				usleep(500000);
 
 				int ch = getch();
 				if (ch == 'q') {
@@ -106,5 +109,5 @@ int main() {
 
 		endwin();
 		return 0;
-		*/
+		
 }
