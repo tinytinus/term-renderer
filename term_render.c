@@ -13,6 +13,7 @@ Goals:
 #include <unistd.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #define MAX_POINTS 100
 
@@ -37,44 +38,48 @@ typedef struct {
 } shape;
 
 int loadShapeCsv(const char* filename, shape* s) {
-		FILE* file = fopen(filename, "r");
-		if (!file) {
-				perror("fopen");
-				return 0;
-		}
+    FILE* file = fopen(filename, "r");
+    if (!file) {
+        perror("fopen");
+        return 0;
+    }
 
-		char line[256];
-		s->point_count = 0;
-		s->edge_count = 0;
+    char line[256];
+    s->point_count = 0;
+    s->edge_count = 0;
+    int reading_points = 0;
+    int reading_edges = 0;
 
-		fgets(line, sizeof(line), file);
+    while (fgets(line, sizeof(line), file)) {
+        if (line[0] == '#' || line[0] == '\n') continue;
+        
+        if (strncmp(line, "POINTS", 6) == 0) {
+            reading_points = 1;
+            reading_edges = 0;
+            continue;
+        }
+        if (strncmp(line, "EDGES", 5) == 0) {
+            reading_points = 0;
+            reading_edges = 1;
+            continue;
+        }
 
-		while (fgets(line, sizeof(line), file)) {
-				if (line[0] == '#' || line[0] == '\n') {
-						continue;
-				}
-
-				float x, y, z;
-				int origin, end;
-				if (sscanf(line, "%f,%f,%f,%d,%d", &x, &y, &z,&origin, &end) == 5) {
-						if (s->point_count >= MAX_POINTS) {
-								break;
-						}
-						s->points[s->point_count].x = x;
-						s->points[s->point_count].y = y;
-						s->points[s->point_count].z = z;
-
-						s->edges[s->edge_count].origin_index = origin;
-						s->edges[s->edge_count].end_index = end;
-
-						s->point_count++;
-						s->edge_count++;
-				}
-		}
-		fclose(file);
-		return 1;
+        if (reading_points) {
+            float x, y, z;
+            if (sscanf(line, "%f,%f,%f", &x, &y, &z) == 3) {
+                s->points[s->point_count++] = (vec3){x, y, z};
+            }
+        }
+        else if (reading_edges) {
+            int start, end;
+            if (sscanf(line, "%d,%d", &start, &end) == 2) {
+                s->edges[s->edge_count++] = (edge){start, end};
+            }
+        }
+    }
+    fclose(file);
+    return 1;
 }
-
 vec3 getShapeCenter3D(shape* s) {
 		vec3 center = {0,0,0};
 		for (int i = 0; i < s->point_count; i++) {
