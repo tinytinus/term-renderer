@@ -117,21 +117,33 @@ vec2 worldToScreen(vec2 p, int screen_width, int screen_height, float scale) {
     return output;
 }
 
-float autoScale(shape* s, float output) {
-		float max_x = -999, min_x = 999, max_y = -999, min_y = 999;
-		for (int i = 0; i < s->point_count; i++) {
-    			if (s->points[i].x > max_x) max_x = s->points[i].x;
-    			if (s->points[i].x < min_x) min_x = s->points[i].x;
-    			if (s->points[i].y > max_y) max_y = s->points[i].y;
-    			if (s->points[i].y < min_y) min_y = s->points[i].y;
-		}
+float autoScale(shape* s, float projection_distance) {
+    if (s->point_count == 0) {
+		return 10.0f;
+	}
 
-		float shape_width = max_x - min_x;
-		float shape_height = max_y - min_y;
-		float auto_scale = (shape_width < shape_height) ? (COLS * 0.5f) / shape_width : (LINES * 0.5f) / shape_height;
+    vec2 first_2d = project3Dto2D(s->points[0], projection_distance);
+    float max_x = first_2d.x, min_x = first_2d.x;
+    float max_y = first_2d.y, min_y = first_2d.y;
+    
+    for (int i = 1; i < s->point_count; i++) {
+        vec2 projected = project3Dto2D(s->points[i], projection_distance);
+        if (projected.x > max_x) max_x = projected.x;
+        if (projected.x < min_x) min_x = projected.x;
+        if (projected.y > max_y) max_y = projected.y;
+        if (projected.y < min_y) min_y = projected.y;
+    }
 
-		output = auto_scale;
-		return output;
+    float projected_width = max_x - min_x;
+    float projected_height = max_y - min_y;
+    
+    float max_screen_width = COLS * 0.7f;
+    float max_screen_height = LINES * 0.7f;
+    
+    float scale_x = (projected_width > 0) ? max_screen_width / projected_width : 10.0f;
+    float scale_y = (projected_height > 0) ? max_screen_height / projected_height : 10.0f;
+    
+    return (scale_x < scale_y) ? scale_x : scale_y;
 }
 
 void drawLine(int x0, int y0, int x1, int y1, char ch) {
@@ -172,13 +184,14 @@ int main() {
     }
 
     float angle = 0;
-	float scale = autoScale(&triangle, scale);
 	
 
     while (1) {
         clear();
         
-        angle += 0.1f;          
+        angle += 0.1f;
+		float scale = autoScale(&triangle, 5.0f);
+		
         
         rotated_triangle = triangle;
         vec3 center3d = getShapeCenter3D(&triangle);
