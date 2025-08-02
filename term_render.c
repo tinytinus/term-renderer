@@ -66,12 +66,18 @@ int loadShapeCsv(const char* filename, shape* s) {
 
         if (reading_points) {
             float x, y, z;
+
+			if (s->point_count >= MAX_POINTS) break;
+
             if (sscanf(line, "%f,%f,%f", &x, &y, &z) == 3) {
                 s->points[s->point_count++] = (vec3){x, y, z};
             }
         }
         else if (reading_edges) {
             int start, end;
+
+			if (s->edge_count >= MAX_POINTS * 2) break;
+
             if (sscanf(line, "%d,%d", &start, &end) == 2) {
                 s->edges[s->edge_count++] = (edge){start, end};
             }
@@ -140,6 +146,13 @@ void drawLine(int x0, int y0, int x1, int y1, char ch) {
 		}
 }
 
+char getChar(float z) {
+    if (z < 0.1f) return '#';
+    else if (z < 0.5f) return '*';
+    else if (z < 1.0f) return '+';
+    else return '.';
+}
+
 int main() {
     initscr();
     noecho();
@@ -156,7 +169,7 @@ int main() {
     }
 
     float angle = 0;
-	
+	vec3 center3d = get3DShapeCenter(&triangle);
 
     while (1) {
         clear();
@@ -166,7 +179,6 @@ int main() {
 		
         
         rotated_triangle = triangle;
-        vec3 center3d = get3DShapeCenter(&triangle);
         
         for (int j = 0; j < triangle.point_count; j++) {
             vec3 translated = {
@@ -197,9 +209,11 @@ int main() {
             
             vec2 start_screen = worldToScreen(start_2d, COLS, LINES, scale);
             vec2 end_screen = worldToScreen(end_2d, COLS, LINES, scale);
-            
-            drawLine((int)start_screen.x, (int)start_screen.y, 
-                     (int)end_screen.x, (int)end_screen.y, '*');
+           
+			float avg_z = (rotated_triangle.points[start_index].z + rotated_triangle.points[end_index].z) / 2.0f;
+			char line_char = getChar(avg_z);
+
+            drawLine((int)start_screen.x, (int)start_screen.y, (int)end_screen.x, (int)end_screen.y, line_char);
         }
 
         refresh();
