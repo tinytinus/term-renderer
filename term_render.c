@@ -17,8 +17,12 @@ Goals:
 #define MAX_POINTS 100
 
 typedef struct {
-		float x, y;
-} vec2;
+    float x, y, z;
+} vec3;
+
+typedef struct {
+	float x, y;
+} vec2 ;
 
 typedef struct {
 		int origin_index;
@@ -26,7 +30,7 @@ typedef struct {
 } edge;
 
 typedef struct {
-		vec2 points[MAX_POINTS];
+		vec3 points[MAX_POINTS];
 		int point_count;
 		edge edges[MAX_POINTS * 2];
 		int edge_count;
@@ -50,14 +54,15 @@ int loadShapeCsv(const char* filename, shape* s) {
 						continue;
 				}
 
-				float x, y;
+				float x, y, z;
 				int origin, end;
-				if (sscanf(line, "%f,%f,%d,%d", &x, &y, &origin, &end) == 4) {
+				if (sscanf(line, "%f,%f,%f,%d,%d", &x, &y, &z,&origin, &end) == 5) {
 						if (s->point_count >= MAX_POINTS) {
 								break;
 						}
 						s->points[s->point_count].x = x;
 						s->points[s->point_count].y = y;
+						s->points[s->point_count].z = z;
 
 						s->edges[s->edge_count].origin_index = origin;
 						s->edges[s->edge_count].end_index = end;
@@ -70,13 +75,59 @@ int loadShapeCsv(const char* filename, shape* s) {
 		return 1;
 }
 
-vec2 rotatePoint(vec2 p, float angle) {
+vec3 getShapeCenter3D(shape* s) {
+		vec3 center = {0,0,0};
+		for (int i = 0; i < s->point_count; i++) {
+			center.x += s->points[i].x;
+			center.y += s->points[i].y;
+			center.z += s->points[i].z;
+		}
+
+		center.x /= s->point_count;
+		center.y /= s->point_count;
+		center.z /= s->point_count;
+
+		return center;
+}
+
+vec3 rotatePointAxis(vec3 p,  float angle) {
 		float s = sinf(angle);
 		float c = cosf(angle);
-		
-		vec2 output = {p.x * c + p.y * s, p.x * s - p.y * c};
+
+		vec3 output = {p.x * c + p.z * s, p.y, -p.x * s + p.z * c};
 		return output;
-};
+}
+
+vec2 project3Dto2D (vec3 p, float distance) {
+	float factor = distance / (distance + p.z);
+	vec2 output = {p.x * factor, p.y * factor};
+   	return output;	
+}
+
+vec2 worldToScreen(vec2 p, int screen_width, int screen_height, float scale) {
+    vec2 output = { 
+        .x = screen_width / 2 + p.x * scale,
+        .y = screen_height / 2 - p.y * scale
+    };
+    return output;
+}
+
+float autoScale(shape* s, float output) {
+		float max_x = -999, min_x = 999, max_y = -999, min_y = 999;
+		for (int i = 0; i < s->point_count; i++) {
+    			if (s->points[i].x > max_x) max_x = s->points[i].x;
+    			if (s->points[i].x < min_x) min_x = s->points[i].x;
+    			if (s->points[i].y > max_y) max_y = s->points[i].y;
+    			if (s->points[i].y < min_y) min_y = s->points[i].y;
+		}
+
+		float shape_width = max_x - min_x;
+		float shape_height = max_y - min_y;
+		float auto_scale = (shape_width < shape_height) ? (COLS * 0.5f) / shape_width : (LINES * 0.5f) / shape_height;
+
+		output = auto_scale;
+		return output;
+}
 
 void drawLine(int x0, int y0, int x1, int y1, char ch) {
 		int dx = abs(x1 - x0);
@@ -100,78 +151,76 @@ void drawLine(int x0, int y0, int x1, int y1, char ch) {
 		}
 }
 
-vec2 worldToScreen(vec2 p, int screen_width, int screen_height, float scale ) {
-		vec2 output = { 
-		.x = screen_width / 2 + p.x * scale,
-		.y = screen_height / 2 - p.y * scale
-		};
-
-		return output;
-}; 
-
 int main() {
-		initscr();
-		noecho();
-		curs_set(FALSE);
-		timeout(0);
+    initscr();
+    noecho();
+    curs_set(FALSE);
+    timeout(0);
 
+    shape triangle;
+    shape rotated_triangle;
 
-		shape triangle;
-		shape rotated_triangle;
+    if (!loadShapeCsv("./shape.csv", &triangle)) {
+        endwin();
+        fprintf(stderr, "Failed to load shape\n");
+        return 1;
+    }
 
-		if (!loadShapeCsv("./shape.csv", &triangle)) {
-				fprintf(stderr, "Failed to load shape\n");
-				return 1;
-		}
+    float angle = 0;
+	float scale = autoScale(&triangle, scale);
+	
 
-		float angle = 0;
+    while (1) {
+        clear();
+        
+        angle += 0.1f;          
+        
+        rotated_triangle = triangle;
+        vec3 center3d = getShapeCenter3D(&triangle);
+        
+        for (int j = 0; j < triangle.point_count; j++) {
+            vec3 translated = {
+                triangle.points[j].x - center3d.x,
+                triangle.points[j].y - center3d.y, 
+                triangle.points[j].z - center3d.z
+            };
+            
+            vec3 rotated = rotatePointAxis(translated, angle);
+            
+            rotated_triangle.points[j] = (vec3){
+                rotated.x + center3d.x,
+                rotated.y + center3d.y,
+                rotated.z + center3d.z
+            };
+        }
 
-		while (1) {
-				clear();
+        for (int i = 0; i < rotated_triangle.edge_count; i++) {
+            int origin_index = rotated_triangle.edges[i].origin_index;
+            int end_index = rotated_triangle.edges[i].end_index;
+            
+            if (origin_index >= rotated_triangle.point_count || end_index >= rotated_triangle.point_count) {
+                continue;
+            }
+            
+            vec2 start_2d = project3Dto2D(rotated_triangle.points[origin_index], 5.0f);
+            vec2 end_2d = project3Dto2D(rotated_triangle.points[end_index], 5.0f);
+            
+            vec2 start_screen = worldToScreen(start_2d, COLS, LINES, scale);
+            vec2 end_screen = worldToScreen(end_2d, COLS, LINES, scale);
+            
+            drawLine((int)start_screen.x, (int)start_screen.y, 
+                     (int)end_screen.x, (int)end_screen.y, '*');
+        }
 
-				angle += 0.1f;
+        refresh();
+        usleep(50000);  // ~20 FPS
 
-				for (int j = 0; j < triangle.point_count; j++) {
-						rotated_triangle.points[j] = rotatePoint(triangle.points[j], angle);
-				}
-				rotated_triangle.point_count = triangle.point_count;
+        int ch = getch();
+        if (ch == 'q') {
+            break;
+        }
+    }
 
-				for (int j = 0; j < triangle.edge_count; j++) {
-						rotated_triangle.edges[j] = triangle.edges[j];
-				}
-				rotated_triangle.edge_count = triangle.edge_count;
-
-				for (int i = 0; i < rotated_triangle.edge_count; i++) {
-						int origin_index = rotated_triangle.edges[i].origin_index;
-						int end_index = rotated_triangle.edges[i].end_index;
-
-						if (origin_index >= rotated_triangle.point_count || end_index >= rotated_triangle.point_count) {
-								continue;
-						}
-
-						vec2 start_screen = worldToScreen(rotated_triangle.points[origin_index], COLS, LINES, 10.0f);
-						vec2 end_screen = worldToScreen(rotated_triangle.points[end_index], COLS, LINES, 10.0f);
-
-						drawLine((int)start_screen.x, (int)start_screen.y, (int)end_screen.x, (int)end_screen.y, '*');
-				}
-				
-				for (int i = 0; i < rotated_triangle.point_count; i++) {
-						vec2 screen_pos = worldToScreen(rotated_triangle.points[i], COLS, LINES, 10.0f);
-						if (screen_pos.x >= 0 && screen_pos.x < COLS && screen_pos.y >= 0 && screen_pos.y < LINES) {
-								mvaddch((int)screen_pos.y, (int)screen_pos.x, '*');
-						}
-				}	
-
-				refresh();
-				usleep(50000);
-
-				int ch = getch();
-				if (ch == 'q') {
-						break;
-				}
-		}
-
-		endwin();
-		return 0;
-		
+    endwin();
+    return 0;
 }
