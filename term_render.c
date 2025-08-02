@@ -135,14 +135,32 @@ int main() {
 						rotated_triangle.points[j] = rotatePoint(triangle.points[j], angle);
 				}
 				rotated_triangle.point_count = triangle.point_count;
+
+				for (int j = 0; j < triangle.edge_count; j++) {
+						rotated_triangle.edges[j] = triangle.edges[j];
+				}
+				rotated_triangle.edge_count = triangle.edge_count;
+
+				for (int i = 0; i < rotated_triangle.edge_count; i++) {
+						int origin_index = rotated_triangle.edges[i].origin_index;
+						int end_index = rotated_triangle.edges[i].end_index;
+
+						if (origin_index >= rotated_triangle.point_count || end_index >= rotated_triangle.point_count) {
+								continue;
+						}
+
+						vec2 start_screen = worldToScreen(rotated_triangle.points[origin_index], COLS, LINES, 10.0f);
+						vec2 end_screen = worldToScreen(rotated_triangle.points[end_index], COLS, LINES, 10.0f);
+
+						drawLine((int)start_screen.x, (int)start_screen.y, (int)end_screen.x, (int)end_screen.y, '*');
+				}
 				
 				for (int i = 0; i < rotated_triangle.point_count; i++) {
 						vec2 screen_pos = worldToScreen(rotated_triangle.points[i], COLS, LINES, 10.0f);
 						if (screen_pos.x >= 0 && screen_pos.x < COLS && screen_pos.y >= 0 && screen_pos.y < LINES) {
 								mvaddch((int)screen_pos.y, (int)screen_pos.x, '*');
 						}
-				}
-				printf("\n");	
+				}	
 
 				refresh();
 				usleep(50000);
