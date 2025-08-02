@@ -2,7 +2,7 @@
  -- A terminal ncurses renderer -- 
 
 Goals:
-- render 2-dimensional shapes spinning around
+- render 3-dimensional shapes spinning around
 - use the best shaped charchtr instead of just plain 1
 - csv rendering 
 - color
@@ -26,7 +26,7 @@ typedef struct {
 } vec2 ;
 
 typedef struct {
-		int origin_index;
+		int start_index;
 		int end_index;
 } edge;
 
@@ -80,7 +80,8 @@ int loadShapeCsv(const char* filename, shape* s) {
     fclose(file);
     return 1;
 }
-vec3 getShapeCenter3D(shape* s) {
+
+vec3 get3DShapeCenter(shape* s) {
 		vec3 center = {0,0,0};
 		for (int i = 0; i < s->point_count; i++) {
 			center.x += s->points[i].x;
@@ -115,35 +116,6 @@ vec2 worldToScreen(vec2 p, int screen_width, int screen_height, float scale) {
         .y = screen_height / 2 - p.y * scale
     };
     return output;
-}
-
-float autoScale(shape* s, float projection_distance) {
-    if (s->point_count == 0) {
-		return 10.0f;
-	}
-
-    vec2 first_2d = project3Dto2D(s->points[0], projection_distance);
-    float max_x = first_2d.x, min_x = first_2d.x;
-    float max_y = first_2d.y, min_y = first_2d.y;
-    
-    for (int i = 1; i < s->point_count; i++) {
-        vec2 projected = project3Dto2D(s->points[i], projection_distance);
-        if (projected.x > max_x) max_x = projected.x;
-        if (projected.x < min_x) min_x = projected.x;
-        if (projected.y > max_y) max_y = projected.y;
-        if (projected.y < min_y) min_y = projected.y;
-    }
-
-    float projected_width = max_x - min_x;
-    float projected_height = max_y - min_y;
-    
-    float max_screen_width = COLS * 0.7f;
-    float max_screen_height = LINES * 0.7f;
-    
-    float scale_x = (projected_width > 0) ? max_screen_width / projected_width : 10.0f;
-    float scale_y = (projected_height > 0) ? max_screen_height / projected_height : 10.0f;
-    
-    return (scale_x < scale_y) ? scale_x : scale_y;
 }
 
 void drawLine(int x0, int y0, int x1, int y1, char ch) {
@@ -190,11 +162,11 @@ int main() {
         clear();
         
         angle += 0.1f;
-		float scale = autoScale(&triangle, 5.0f);
+		float scale = 50.0f;
 		
         
         rotated_triangle = triangle;
-        vec3 center3d = getShapeCenter3D(&triangle);
+        vec3 center3d = get3DShapeCenter(&triangle);
         
         for (int j = 0; j < triangle.point_count; j++) {
             vec3 translated = {
@@ -213,14 +185,14 @@ int main() {
         }
 
         for (int i = 0; i < rotated_triangle.edge_count; i++) {
-            int origin_index = rotated_triangle.edges[i].origin_index;
+            int start_index = rotated_triangle.edges[i].start_index;
             int end_index = rotated_triangle.edges[i].end_index;
             
-            if (origin_index >= rotated_triangle.point_count || end_index >= rotated_triangle.point_count) {
+            if (start_index >= rotated_triangle.point_count || end_index >= rotated_triangle.point_count) {
                 continue;
             }
             
-            vec2 start_2d = project3Dto2D(rotated_triangle.points[origin_index], 5.0f);
+            vec2 start_2d = project3Dto2D(rotated_triangle.points[start_index], 5.0f);
             vec2 end_2d = project3Dto2D(rotated_triangle.points[end_index], 5.0f);
             
             vec2 start_screen = worldToScreen(start_2d, COLS, LINES, scale);
