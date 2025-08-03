@@ -39,7 +39,7 @@ typedef struct {
 	int edge_count;
 } shape;
 
-float z_buffer[LINES][COLS];
+float z_buffer[200][200];
 
 void initZBuffer() {
 	int max_lines = LINES < 200 ? LINES : 200;
