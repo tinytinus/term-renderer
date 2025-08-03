@@ -99,7 +99,7 @@ int loadShapeCsv(const char* filename, shape* s) {
             if (sscanf(line, "%d,%d,%d", &start, &end, &color) == 3) {
                 s->edges[s->edge_count++] = (edge){start, end, color};
             }
-			else if (sscanf(line, "%d,%d", &start, &end) == 2) {  // Fixed: removed third %d
+			else if (sscanf(line, "%d,%d", &start, &end) == 2) {
 				s->edges[s->edge_count++] = (edge){start, end, 1};
 			}
         }
@@ -251,10 +251,8 @@ int main(int argc, char *argv[]) {
         clear();
 		initZBuffer();
         
-        angle += 0.1f;
-        
+        angle += 0.1f; 
         temp_object = object;
-        
 		scale = autoScale(&temp_object, COLS, LINES, 5.0f);
 		
 		for (int j = 0; j < object.point_count; j++) {
@@ -297,7 +295,6 @@ int main(int argc, char *argv[]) {
 					 start_3d.z, end_3d.z, line_char, temp_object.edges[i].color_pair);
 			}
         
-
         refresh();
         usleep(50000);  // ~20 FPS
 
