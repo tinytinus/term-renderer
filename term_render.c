@@ -40,7 +40,7 @@ typedef struct {
 
 int loadShapeCsv(const char* filename, shape* s) {
     FILE* file = fopen(filename, "r");
-    if (!file) {
+  	if (!file) {
         perror("fopen");
         return 0;
     }
