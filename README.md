@@ -2,6 +2,11 @@
 
 A simple C and nCurses terminal shape-renderer
 
+Usage :
+```
+./term_renderer [-f filename]
+```
+
 ## TODO:
 
  - [x] color support
