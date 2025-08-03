@@ -6,15 +6,18 @@ Goals:
 - use the best shaped charchtr instead of just plain 1
 - csv rendering 
 - color
+- edit mode
 
 */
 
 #include <ncurses.h>
 #include <unistd.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
 #include <stdbool.h>
+#include <getopt.h>
 
 #define MAX_POINTS 100
 
@@ -199,7 +202,24 @@ float autoScale(shape* s, int screen_width, int screen_height, float distance) {
 	return fminf(scale_x, scale_y);
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+
+	bool edit_mode = false;
+	int current_point = -1;
+	
+	char* filename = "shape.csv";	
+	int opt;
+
+	while ((opt = getopt(argc, argv, "f:")!= -1)) {
+		switch (opt) {
+			case 'f':
+				filename = optarg;
+			case '?':
+				fprintf(stderr, "Usage: %s [-d] [-f filename]\n", argv[0]);
+				exit(1);
+		}
+	}
+
     initscr();
     noecho();
     curs_set(FALSE);
@@ -214,10 +234,10 @@ int main() {
 	init_pair(6, COLOR_BLUE, COLOR_BLACK);
 	init_pair(7, COLOR_MAGENTA, COLOR_BLACK);
 
-    shape triangle;
-    shape rotated_triangle;
+    shape object;
+    shape temp_object;
 
-    if (!loadShapeCsv("./shape.csv", &triangle)) {
+    if (!loadShapeCsv(filename, &object)) {
         endwin();
         fprintf(stderr, "Failed to load shape\n");
         return 1;
@@ -225,7 +245,7 @@ int main() {
 
     float angle = 0;
 	float scale = 0;
-	vec3 center3d = get3DShapeCenter(&triangle);
+	vec3 center3d = get3DShapeCenter(&object);
 
     while (1) {
         clear();
@@ -233,37 +253,36 @@ int main() {
         
         angle += 0.1f;
         
-        rotated_triangle = triangle;
+        temp_object = object;
         
-		scale = autoScale(&rotated_triangle, COLS, LINES, 5.0f);
+		scale = autoScale(&temp_object, COLS, LINES, 5.0f);
 		
+		for (int j = 0; j < object.point_count; j++) {
+			vec3 translated = {
+				object.points[j].x - center3d.x,
+				object.points[j].y - center3d.y, 
+				object.points[j].z - center3d.z
+			};
+			
+			vec3 temp = rotatePointAxis(translated, angle);
+			
+			temp_object.points[j] = (vec3){
+				temp.x + center3d.x,
+				temp.y + center3d.y,
+				temp.z + center3d.z
+			};
+		}
 
-        for (int j = 0; j < triangle.point_count; j++) {
-            vec3 translated = {
-                triangle.points[j].x - center3d.x,
-                triangle.points[j].y - center3d.y, 
-                triangle.points[j].z - center3d.z
-            };
+        for (int i = 0; i < temp_object.edge_count; i++) {
+            int start_index = temp_object.edges[i].start_index;
+            int end_index = temp_object.edges[i].end_index;
             
-            vec3 rotated = rotatePointAxis(translated, angle);
-            
-            rotated_triangle.points[j] = (vec3){
-                rotated.x + center3d.x,
-                rotated.y + center3d.y,
-                rotated.z + center3d.z
-            };
-        }
-
-        for (int i = 0; i < rotated_triangle.edge_count; i++) {
-            int start_index = rotated_triangle.edges[i].start_index;
-            int end_index = rotated_triangle.edges[i].end_index;
-            
-            if (start_index >= rotated_triangle.point_count || end_index >= rotated_triangle.point_count) {
+            if (start_index >= temp_object.point_count || end_index >= temp_object.point_count) {
                 continue;
             }
 
-			vec3 start_3d = rotated_triangle.points[start_index];
-			vec3 end_3d = rotated_triangle.points[end_index];
+			vec3 start_3d = temp_object.points[start_index];
+			vec3 end_3d = temp_object.points[end_index];
             
             vec2 start_2d = project3Dto2D(start_3d, 5.0f);
             vec2 end_2d = project3Dto2D(end_3d, 5.0f);
@@ -271,12 +290,13 @@ int main() {
             vec2 start_screen = worldToScreen(start_2d, COLS, LINES, scale);
             vec2 end_screen = worldToScreen(end_2d, COLS, LINES, scale);
            
-			float avg_z = (rotated_triangle.points[start_index].z + rotated_triangle.points[end_index].z) / 2.0f;
+			float avg_z = (temp_object.points[start_index].z + temp_object.points[end_index].z) / 2.0f;
 			char line_char = getChar(avg_z);
 
             drawLine((int)start_screen.x, (int)start_screen.y, (int)end_screen.x, (int)end_screen.y,
-					 start_3d.z, end_3d.z, line_char, rotated_triangle.edges[i].color_pair);
-        }
+					 start_3d.z, end_3d.z, line_char, temp_object.edges[i].color_pair);
+			}
+        
 
         refresh();
         usleep(50000);  // ~20 FPS
@@ -285,7 +305,7 @@ int main() {
         if (ch == 'q') {
             break;
         }
-    }
+	}
 
     endwin();
     return 0;
