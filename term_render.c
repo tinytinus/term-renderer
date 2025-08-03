@@ -28,6 +28,7 @@ typedef struct {
 typedef struct {
 		int start_index;
 		int end_index;
+		int color_pair;
 } edge;
 
 typedef struct {
@@ -74,13 +75,16 @@ int loadShapeCsv(const char* filename, shape* s) {
             }
         }
         else if (reading_edges) {
-            int start, end;
+            int start, end, color;
 
 			if (s->edge_count >= MAX_POINTS * 2) break;
 
-            if (sscanf(line, "%d,%d", &start, &end) == 2) {
-                s->edges[s->edge_count++] = (edge){start, end};
+            if (sscanf(line, "%d,%d,%d", &start, &end, &color) == 3) {
+                s->edges[s->edge_count++] = (edge){start, end, color};
             }
+			else if (sscanf(line, "%d,%d,%d", &start, &end) == 2) {
+				s->edges[s->edge_count++] = (edge){start, end, 1};
+			}
         }
     }
     fclose(file);
@@ -124,7 +128,7 @@ vec2 worldToScreen(vec2 p, int screen_width, int screen_height, float scale) {
     return output;
 }
 
-void drawLine(int x0, int y0, int x1, int y1, char ch) {
+void drawLine(int x0, int y0, int x1, int y1, char ch, int color_pair) {
 		int dx = abs(x1 - x0);
 		int dy = abs(y1 - y0);
 		int sx = (x0 < x1) ? 1 : -1;
@@ -133,7 +137,9 @@ void drawLine(int x0, int y0, int x1, int y1, char ch) {
 
 		while (1) {
 				if (x0 >= 0 && x0 < COLS && y0 >= 0 && y0 < LINES) {
+						attron(COLOR_PAIR(color_pair));
 						mvaddch(y0, x0, ch);
+						attroff(COLOR_PAIR(color_pair));
 				}
 
 				if (x0 == x1 && y0 == y1) {
@@ -158,6 +164,15 @@ int main() {
     noecho();
     curs_set(FALSE);
     timeout(0);
+	start_color();
+
+	init_pair(1, COLOR_WHITE, COLOR_BLACK); 
+	init_pair(2, COLOR_RED, COLOR_BLACK);
+	init_pair(3, COLOR_CYAN, COLOR_BLACK);
+	init_pair(4, COLOR_YELLOW, COLOR_BLACK);
+	init_pair(5, COLOR_GREEN, COLOR_BLACK);
+	init_pair(6, COLOR_BLUE, COLOR_BLACK);
+	init_pair(7, COLOR_MAGENTA, COLOR_BLACK);
 
     shape triangle;
     shape rotated_triangle;
@@ -213,7 +228,7 @@ int main() {
 			float avg_z = (rotated_triangle.points[start_index].z + rotated_triangle.points[end_index].z) / 2.0f;
 			char line_char = getChar(avg_z);
 
-            drawLine((int)start_screen.x, (int)start_screen.y, (int)end_screen.x, (int)end_screen.y, line_char);
+            drawLine((int)start_screen.x, (int)start_screen.y, (int)end_screen.x, (int)end_screen.y, line_char, rotated_triangle.edges[i].color_pair);
         }
 
         refresh();
