@@ -159,6 +159,22 @@ char getChar(float z) {
     else return '.';
 }
 
+float autoScale(shape* s, int screen_width, int screen_height, float distance) {
+	float soft_limit = 0.7f;
+   	float max_screen_x = 0, max_screen_y = 0;  	
+
+	for (int i = 0; i < s->point_count; i++) {
+		vec2 projected = project3Dto2D(s->points[i], distance);
+		max_screen_x = fmaxf(max_screen_x, fabsf(projected.x));
+		max_screen_y = fmaxf(max_screen_y, fabsf(projected.y));
+	}
+
+	float scale_x = (screen_width * soft_limit / 2) / max_screen_x;
+	float scale_y = (screen_height * soft_limit / 2) / max_screen_y;
+
+	return fminf(scale_x, scale_y);
+}
+
 int main() {
     initscr();
     noecho();
@@ -184,17 +200,19 @@ int main() {
     }
 
     float angle = 0;
+	float scale = 0;
 	vec3 center3d = get3DShapeCenter(&triangle);
 
     while (1) {
         clear();
         
         angle += 0.1f;
-		float scale = 50.0f;
-		
         
         rotated_triangle = triangle;
         
+		scale = autoScale(&rotated_triangle, COLS, LINES, 5.0f);
+		
+
         for (int j = 0; j < triangle.point_count; j++) {
             vec3 translated = {
                 triangle.points[j].x - center3d.x,
