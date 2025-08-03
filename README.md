@@ -8,7 +8,7 @@ A simple C and nCurses terminal shape-renderer
  - [x] automatic scaling
  - [x] the right symbol
  - [x] CSV rendering system
- - [ ] correct drawing order
+ - [x] correct drawing order
 
 ## shapes
 the shapes consist of 3 parts: the points, the edges (aka. lines) and the colors.
