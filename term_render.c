@@ -14,6 +14,7 @@ Goals:
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define MAX_POINTS 100
 
@@ -37,6 +38,19 @@ typedef struct {
 		edge edges[MAX_POINTS * 2];
 		int edge_count;
 } shape;
+
+float z_buffer[200][200];  // Fixed size for safety
+
+void initZBuffer() {
+	int max_lines = LINES < 200 ? LINES : 200;
+	int max_cols = COLS < 200 ? COLS : 200;
+	
+	for (int y = 0; y < max_lines; y++) {
+		for (int x = 0; x < max_cols; x++) {
+			z_buffer[y][x] = -100.0f;
+		}
+	}
+}
 
 int loadShapeCsv(const char* filename, shape* s) {
     FILE* file = fopen(filename, "r");
@@ -82,7 +96,7 @@ int loadShapeCsv(const char* filename, shape* s) {
             if (sscanf(line, "%d,%d,%d", &start, &end, &color) == 3) {
                 s->edges[s->edge_count++] = (edge){start, end, color};
             }
-			else if (sscanf(line, "%d,%d,%d", &start, &end) == 2) {
+			else if (sscanf(line, "%d,%d", &start, &end) == 2) {  // Fixed: removed third %d
 				s->edges[s->edge_count++] = (edge){start, end, 1};
 			}
         }
@@ -128,18 +142,28 @@ vec2 worldToScreen(vec2 p, int screen_width, int screen_height, float scale) {
     return output;
 }
 
-void drawLine(int x0, int y0, int x1, int y1, char ch, int color_pair) {
+void drawLine(int x0, int y0, int x1, int y1, float z0, float z1, char ch, int color_pair) {
 		int dx = abs(x1 - x0);
 		int dy = abs(y1 - y0);
 		int sx = (x0 < x1) ? 1 : -1;
 		int sy = (y0 < y1) ? 1 : -1;
 		int err = dx - dy;
 
+		int total_steps = dx > dy ? dx : dy;
+		int current_step = 0;
+
 		while (1) {
-				if (x0 >= 0 && x0 < COLS && y0 >= 0 && y0 < LINES) {
-						attron(COLOR_PAIR(color_pair));
-						mvaddch(y0, x0, ch);
-						attroff(COLOR_PAIR(color_pair));
+				if (x0 >= 0 && x0 < COLS && y0 >= 0 && y0 < LINES && 
+					x0 < 200 && y0 < 200) {
+						float t = total_steps > 0 ? (float)current_step / total_steps : 0;
+						float current_z = z0 + t * (z1 - z0);
+
+						if (current_z > z_buffer[y0][x0]){
+								z_buffer[y0][x0] = current_z; 
+								attron(COLOR_PAIR(color_pair));
+								mvaddch(y0, x0, ch);
+								attroff(COLOR_PAIR(color_pair));
+						}
 				}
 
 				if (x0 == x1 && y0 == y1) {
@@ -149,6 +173,7 @@ void drawLine(int x0, int y0, int x1, int y1, char ch, int color_pair) {
 				int e2 = 2 * err;
 				if (e2 > -dy) {err -= dy; x0 += sx;}
 				if (e2 < dx) {err += dx; y0 += sy;}
+				current_step++;
 		}
 }
 
@@ -205,6 +230,7 @@ int main() {
 
     while (1) {
         clear();
+		initZBuffer();
         
         angle += 0.1f;
         
@@ -236,9 +262,12 @@ int main() {
             if (start_index >= rotated_triangle.point_count || end_index >= rotated_triangle.point_count) {
                 continue;
             }
+
+			vec3 start_3d = rotated_triangle.points[start_index];
+			vec3 end_3d = rotated_triangle.points[end_index];
             
-            vec2 start_2d = project3Dto2D(rotated_triangle.points[start_index], 5.0f);
-            vec2 end_2d = project3Dto2D(rotated_triangle.points[end_index], 5.0f);
+            vec2 start_2d = project3Dto2D(start_3d, 5.0f);
+            vec2 end_2d = project3Dto2D(end_3d, 5.0f);
             
             vec2 start_screen = worldToScreen(start_2d, COLS, LINES, scale);
             vec2 end_screen = worldToScreen(end_2d, COLS, LINES, scale);
@@ -246,7 +275,8 @@ int main() {
 			float avg_z = (rotated_triangle.points[start_index].z + rotated_triangle.points[end_index].z) / 2.0f;
 			char line_char = getChar(avg_z);
 
-            drawLine((int)start_screen.x, (int)start_screen.y, (int)end_screen.x, (int)end_screen.y, line_char, rotated_triangle.edges[i].color_pair);
+            drawLine((int)start_screen.x, (int)start_screen.y, (int)end_screen.x, (int)end_screen.y,
+					 start_3d.z, end_3d.z, line_char, rotated_triangle.edges[i].color_pair);
         }
 
         refresh();
