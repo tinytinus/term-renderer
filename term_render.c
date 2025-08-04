@@ -271,6 +271,7 @@ int main(int argc, char *argv[]) {
     noecho();
     curs_set(FALSE);
     timeout(0);
+	cbreak();
 	start_color();
 
 	init_pair(1, COLOR_WHITE, COLOR_BLACK); 
