@@ -55,7 +55,7 @@ void initZBuffer() {
 	}
 }
 
-int loadShapeCsv(const char* filename, shape* s) {
+int loadShapeCsv(char* filename, shape* s) {
     FILE* file = fopen(filename, "r");
   	if (!file) {
         perror("fopen");
@@ -210,10 +210,11 @@ int main(int argc, char *argv[]) {
 	char* filename = "shape.csv";	
 	int opt;
 
-	while ((opt = getopt(argc, argv, "f:")!= -1)) {
+	while ((opt = getopt(argc, argv, "f:")) != -1) {
 		switch (opt) {
 			case 'f':
 				filename = optarg;
+				break;
 			case '?':
 				fprintf(stderr, "Usage: %s [-d] [-f filename]\n", argv[0]);
 				exit(1);
