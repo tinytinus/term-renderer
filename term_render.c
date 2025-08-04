@@ -100,6 +100,7 @@ int loadShapeCsv(char* filename, shape* s) {
 
 			if (s->edge_count < MAX_POINTS * 2){
 				if (sscanf(line, "%d,%d,%d", &start, &end, &color) == 3) {
+					color = color > 9 ? 9 : (color < 1 ? 1 : color);
 					s->edges[s->edge_count++] = (edge){start, end, color};
 				}
 				else if (sscanf(line, "%d,%d", &start, &end) == 2) {
@@ -243,6 +244,8 @@ int main(int argc, char *argv[]) {
 	init_pair(5, COLOR_GREEN, COLOR_BLACK);
 	init_pair(6, COLOR_BLUE, COLOR_BLACK);
 	init_pair(7, COLOR_MAGENTA, COLOR_BLACK);
+	init_pair(8, COLOR_MAGENTA | A_BOLD, COLOR_BLACK);
+	init_pair(9, COLOR_YELLOW | A_BOLD, COLOR_BLACK);
 
     shape object;
     shape temp_object;
