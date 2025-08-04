@@ -78,6 +78,11 @@ int loadShapeCsv(char* filename, shape* s) {
         return 0;
     }
 
+	if (!strstr(filename, ".csv")) {
+    	perror("File must be a .csv file\n");
+    	return 0;
+	}
+
 	s->min_z = FLT_MAX;
 	s->max_z = - FLT_MAX;
 
@@ -283,7 +288,7 @@ int main(int argc, char *argv[]) {
 
 	if (!loadShapeCsv(filename, &object)) {
         endwin();
-        fprintf(stderr, "Failed to load shape\n");
+        perror("Failed to load shape\n");
         return 1;
     }
 
