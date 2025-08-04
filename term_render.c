@@ -18,6 +18,7 @@ Goals:
 #include <string.h>
 #include <stdbool.h>
 #include <getopt.h>
+#include <float.h>
 
 #define MAX_POINTS 100
 #define PROJECTION_DISTANCE 5.0f
@@ -69,6 +70,9 @@ int loadShapeCsv(char* filename, shape* s) {
         perror("fopen");
         return 0;
     }
+
+	s->min_z = FLT_MAX;
+	s->max_z = - FLT_MAX;
 
     char line[256];
     s->point_count = 0;
@@ -160,7 +164,7 @@ vec2 worldToScreen(vec2 p, int screen_width, int screen_height, float scale) {
 	return output;
 }
 
-void drawLine(int x0, int y0, int x1, int y1, float z0, float z1, char* ch, int color_pair) {
+void drawLine(int x0, int y0, int x1, int y1, float z0, float z1, const char* ch, int color_pair) {
 	int dx = abs(x1 - x0);
 	int dy = abs(y1 - y0);
 	int sx = (x0 < x1) ? 1 : -1;
@@ -172,7 +176,7 @@ void drawLine(int x0, int y0, int x1, int y1, float z0, float z1, char* ch, int 
 
 	while (1) {
 		if (x0 >= 0 && x0 < COLS && y0 >= 0 && y0 < LINES) {
-			if (x0 <= size_z_buffer && y0 <= size_z_buffer) {	
+			if (x0 < size_z_buffer && y0 < size_z_buffer) {	
 				float t = total_steps > 0 ? (float)current_step / total_steps : 0;
 				float current_z = z0 + t * (z1 - z0);
 
@@ -200,9 +204,14 @@ void drawLine(int x0, int y0, int x1, int y1, float z0, float z1, char* ch, int 
 	}
 }
 
-char* getChar(float z, float min_z, float max_z, bool nerd_font) {
-	float normalized_z = (z - min_z) / (max_z - min_z);
-	
+const char* getChar(float z, float min_z, float max_z, bool nerd_font) {
+	float normalized_z;
+	if (min_z == max_z) {
+		normalized_z = 0.5f;
+	} else {
+		normalized_z = (z - min_z) / (max_z - min_z);
+	}
+
 	if (nerd_font) {
 		if (normalized_z < 0.2f) return "█";
         else if (normalized_z < 0.4f) return "▓";
@@ -221,7 +230,7 @@ char* getChar(float z, float min_z, float max_z, bool nerd_font) {
 }
 
 float autoScale(shape* s, int screen_width, int screen_height, float distance) {
-   	float max_screen_x = 0, max_screen_y = 0;  	
+float max_screen_x = 0, max_screen_y = 0;  	
 
 	for (int i = 0; i < s->point_count; i++) {
 		vec2 projected = project3Dto2D(s->points[i], distance);
@@ -276,7 +285,7 @@ int main(int argc, char *argv[]) {
     shape object;
     shape temp_object;
 
-    if (!loadShapeCsv(filename, &object)) {
+	if (!loadShapeCsv(filename, &object)) {
         endwin();
         fprintf(stderr, "Failed to load shape\n");
         return 1;
@@ -285,14 +294,15 @@ int main(int argc, char *argv[]) {
     float angle = 0;
 	float scale = 0;
 	vec3 center3d = get3DShapeCenter(&object);
-
-    while (1) {
+	
+	scale = autoScale(&object, COLS, LINES, PROJECTION_DISTANCE);
+    
+	while (1) {
         clear();
 		initZBuffer();
         
-        angle += 0.1f; 
+		angle += 0.1f; 
         temp_object = object;
-		scale = autoScale(&temp_object, COLS, LINES, PROJECTION_DISTANCE);
 		
 		for (int j = 0; j < object.point_count; j++) {
 			vec3 translated = {
@@ -326,9 +336,9 @@ int main(int argc, char *argv[]) {
             
             vec2 start_screen = worldToScreen(start_2d, COLS, LINES, scale);
             vec2 end_screen = worldToScreen(end_2d, COLS, LINES, scale);
-           
+
 			float avg_z = (temp_object.points[start_index].z + temp_object.points[end_index].z) / 2.0f;
-			char* line_char = getChar(avg_z, temp_object.min_z, temp_object.max_z, nerd_font);
+			const char* line_char = getChar(avg_z, temp_object.min_z, temp_object.max_z, nerd_font);
 
             drawLine((int)start_screen.x, (int)start_screen.y, (int)end_screen.x, (int)end_screen.y,
 					 start_3d.z, end_3d.z, line_char, temp_object.edges[i].color_pair);
