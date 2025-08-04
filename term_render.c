@@ -31,6 +31,8 @@ Goals:
 #define PROJECTION_DISTANCE 5.0f
 #define FRAME_DELAY 50000
 #define SOFT_LIMIT_FACTOR 0.7f
+#define SIZE_Z_BUFFER 200
+#define LINE_LENGTH
 
 typedef struct {
 	float x, y, z;
@@ -56,13 +58,11 @@ typedef struct {
 	float max_z;
 } shape;
 
-int size_z_buffer = 200;
-float z_buffer[200][200];
-// this is not a mistake, gloabal arrays need to be declared using a literal int not a variable
+float z_buffer[SIZE_Z_BUFFER][SIZE_Z_BUFFER];
 
 void initZBuffer() {
-	int max_lines = LINES < size_z_buffer ? LINES : size_z_buffer;
-	int max_cols = COLS < size_z_buffer ? COLS : size_z_buffer;
+	int max_lines = LINES < SIZE_Z_BUFFER ? LINES : SIZE_Z_BUFFER;
+	int max_cols = COLS < SIZE_Z_BUFFER ? COLS : SIZE_Z_BUFFER;
 	
 	for (int y = 0; y < max_lines; y++) {
 		for (int x = 0; x < max_cols; x++) {
@@ -86,7 +86,7 @@ int loadShapeCsv(char* filename, shape* s) {
 	s->min_z = FLT_MAX;
 	s->max_z = - FLT_MAX;
 
-    char line[256];
+    char line[LINE_LENGTH];
     s->point_count = 0;
     s->edge_count = 0;
     int reading_points = 0;
@@ -188,7 +188,7 @@ void drawLine(int x0, int y0, int x1, int y1, float z0, float z1, const char* ch
 
 	while (1) {
 		if (x0 >= 0 && x0 < COLS && y0 >= 0 && y0 < LINES) {
-			if (x0 < size_z_buffer && y0 < size_z_buffer) {	
+			if (x0 < SIZE_Z_BUFFER && y0 < SIZE_Z_BUFFER) {	
 				float t = total_steps > 0 ? (float)current_step / total_steps : 0;
 				float current_z = z0 + t * (z1 - z0);
 
