@@ -43,10 +43,14 @@ typedef struct {
 	int point_count;
 	edge edges[MAX_POINTS * 2];
 	int edge_count;
+
+	float min_z;
+	float max_z;
 } shape;
 
 int size_z_buffer = 200;
-float z_buffer[size_z_buffer][size_z_buffer];
+float z_buffer[200][200];
+// this is not a mistake, gloabal arrays need to be declared using a literal int not a variable
 
 void initZBuffer() {
 	int max_lines = LINES < size_z_buffer ? LINES : size_z_buffer;
@@ -93,6 +97,12 @@ int loadShapeCsv(char* filename, shape* s) {
 
             if (sscanf(line, "%f,%f,%f", &x, &y, &z) == 3) {
                 s->points[s->point_count++] = (vec3){x, y, z};
+				if (z < s->min_z) {
+					s->min_z = z;
+				} 
+			   	if (z > s->max_z) {
+					s->max_z = z;
+				}	
             }
         }
         else if (reading_edges) {
@@ -150,7 +160,7 @@ vec2 worldToScreen(vec2 p, int screen_width, int screen_height, float scale) {
 	return output;
 }
 
-void drawLine(int x0, int y0, int x1, int y1, float z0, float z1, char ch, int color_pair) {
+void drawLine(int x0, int y0, int x1, int y1, float z0, float z1, char* ch, int color_pair) {
 	int dx = abs(x1 - x0);
 	int dy = abs(y1 - y0);
 	int sx = (x0 < x1) ? 1 : -1;
@@ -169,12 +179,12 @@ void drawLine(int x0, int y0, int x1, int y1, float z0, float z1, char ch, int c
 				if (current_z > z_buffer[y0][x0]) {
 					z_buffer[y0][x0] = current_z; 
 					attron(COLOR_PAIR(color_pair));
-					mvaddch(y0, x0, ch);
+					mvaddstr(y0, x0, ch);
 					attroff(COLOR_PAIR(color_pair));
 				}
 			} else {
 				attron(COLOR_PAIR(color_pair));
-				mvaddch(y0, x0, ch);
+				mvaddstr(y0, x0, ch);
 				attroff(COLOR_PAIR(color_pair));
 			}
 		}
@@ -190,11 +200,24 @@ void drawLine(int x0, int y0, int x1, int y1, float z0, float z1, char ch, int c
 	}
 }
 
-char getChar(float z) {
-    if (z < 0.1f) return '#';
-    else if (z < 0.5f) return '*';
-    else if (z < 1.0f) return '+';
-    else return '.';
+char* getChar(float z, float min_z, float max_z, bool nerd_font) {
+	float normalized_z = (z - min_z) / (max_z - min_z);
+	
+	if (nerd_font) {
+		if (normalized_z < 0.2f) return "█";
+        else if (normalized_z < 0.4f) return "▓";
+        else if (normalized_z < 0.6f) return "▒";
+        else if (normalized_z < 0.8f) return "░";
+        else return ".";
+	} else {
+		if (normalized_z < 0.2f) return "#";
+        else if (normalized_z < 0.4f) return "@";
+        else if (normalized_z < 0.6f) return "%";
+        else if (normalized_z < 0.8f) return "+";
+		else if (normalized_z < 1.0f) return "=";
+		else if (normalized_z < 1.2f) return "-";
+        else return ".";
+	}
 }
 
 float autoScale(shape* s, int screen_width, int screen_height, float distance) {
@@ -214,14 +237,17 @@ float autoScale(shape* s, int screen_width, int screen_height, float distance) {
 
 int main(int argc, char *argv[]) {
 
-	bool edit_mode = false;
+	bool nerd_font = false;
 	int current_point = -1;
 	
 	char* filename = "shape.csv";	
 	int opt;
 
-	while ((opt = getopt(argc, argv, "f:")) != -1) {
+	while ((opt = getopt(argc, argv, "nf:")) != -1) {
 		switch (opt) {
+			case 'n':
+				nerd_font = true;
+				break;
 			case 'f':
 				filename = optarg;
 				break;
@@ -244,8 +270,8 @@ int main(int argc, char *argv[]) {
 	init_pair(5, COLOR_GREEN, COLOR_BLACK);
 	init_pair(6, COLOR_BLUE, COLOR_BLACK);
 	init_pair(7, COLOR_MAGENTA, COLOR_BLACK);
-	init_pair(8, COLOR_MAGENTA | A_BOLD, COLOR_BLACK);
-	init_pair(9, COLOR_YELLOW | A_BOLD, COLOR_BLACK);
+	init_pair(8, COLOR_WHITE, COLOR_BLACK);
+	init_pair(9, COLOR_WHITE, COLOR_BLACK);
 
     shape object;
     shape temp_object;
@@ -302,7 +328,7 @@ int main(int argc, char *argv[]) {
             vec2 end_screen = worldToScreen(end_2d, COLS, LINES, scale);
            
 			float avg_z = (temp_object.points[start_index].z + temp_object.points[end_index].z) / 2.0f;
-			char line_char = getChar(avg_z);
+			char* line_char = getChar(avg_z, temp_object.min_z, temp_object.max_z, nerd_font);
 
             drawLine((int)start_screen.x, (int)start_screen.y, (int)end_screen.x, (int)end_screen.y,
 					 start_3d.z, end_3d.z, line_char, temp_object.edges[i].color_pair);
