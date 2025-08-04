@@ -42,7 +42,8 @@ typedef struct {
 	int edge_count;
 } shape;
 
-float z_buffer[200][200];
+int size_z_buffer = 200;
+float z_buffer[size_z_buffer][size_z_buffer];
 
 void initZBuffer() {
 	int max_lines = LINES < 200 ? LINES : 200;
@@ -92,15 +93,15 @@ int loadShapeCsv(char* filename, shape* s) {
             }
         }
         else if (reading_edges) {
-            int start, end, color;
+			int start, end, color;
 
-			if (s->edge_count >= MAX_POINTS * 2) break;
-
-            if (sscanf(line, "%d,%d,%d", &start, &end, &color) == 3) {
-                s->edges[s->edge_count++] = (edge){start, end, color};
-            }
-			else if (sscanf(line, "%d,%d", &start, &end) == 2) {
-				s->edges[s->edge_count++] = (edge){start, end, 1};
+			if (s->edge_count < MAX_POINTS * 2){
+				if (sscanf(line, "%d,%d,%d", &start, &end, &color) == 3) {
+					s->edges[s->edge_count++] = (edge){start, end, color};
+				}
+				else if (sscanf(line, "%d,%d", &start, &end) == 2) {
+					s->edges[s->edge_count++] = (edge){start, end, 1};
+				}
 			}
         }
     }
@@ -156,12 +157,18 @@ void drawLine(int x0, int y0, int x1, int y1, float z0, float z1, char ch, int c
 	int current_step = 0;
 
 	while (1) {
-		if (x0 >= 0 && x0 < COLS && y0 >= 0 && y0 < LINES && x0 < 200 && y0 < 200) {
-			float t = total_steps > 0 ? (float)current_step / total_steps : 0;
-			float current_z = z0 + t * (z1 - z0);
+		if (x0 >= 0 && x0 < COLS && y0 >= 0 && y0 < LINES) {
+			if (x0 <= size_z_buffer && y0 <= size_z_buffer) {	
+				float t = total_steps > 0 ? (float)current_step / total_steps : 0;
+				float current_z = z0 + t * (z1 - z0);
 
-			if (current_z > z_buffer[y0][x0]) {
-				z_buffer[y0][x0] = current_z; 
+				if (current_z > z_buffer[y0][x0]) {
+					z_buffer[y0][x0] = current_z; 
+					attron(COLOR_PAIR(color_pair));
+					mvaddch(y0, x0, ch);
+					attroff(COLOR_PAIR(color_pair));
+				}
+			} else {
 				attron(COLOR_PAIR(color_pair));
 				mvaddch(y0, x0, ch);
 				attroff(COLOR_PAIR(color_pair));
