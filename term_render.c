@@ -32,7 +32,7 @@ Goals:
 #define FRAME_DELAY 50000
 #define SOFT_LIMIT_FACTOR 0.7f
 #define SIZE_Z_BUFFER 200
-#define LINE_LENGTH
+#define LINE_LENGTH 256
 
 typedef struct {
 	float x, y, z;
