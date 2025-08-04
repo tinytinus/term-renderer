@@ -20,6 +20,9 @@ Goals:
 #include <getopt.h>
 
 #define MAX_POINTS 100
+#define PROJECTION_DISTANCE 5.0f
+#define FRAME_DELAY 50000
+#define SOFT_LIMIT_FACTOR 0.7f
 
 typedef struct {
 	float x, y, z;
@@ -46,8 +49,8 @@ int size_z_buffer = 200;
 float z_buffer[size_z_buffer][size_z_buffer];
 
 void initZBuffer() {
-	int max_lines = LINES < 200 ? LINES : 200;
-	int max_cols = COLS < 200 ? COLS : 200;
+	int max_lines = LINES < size_z_buffer ? LINES : size_z_buffer;
+	int max_cols = COLS < size_z_buffer ? COLS : size_z_buffer;
 	
 	for (int y = 0; y < max_lines; y++) {
 		for (int x = 0; x < max_cols; x++) {
@@ -194,7 +197,6 @@ char getChar(float z) {
 }
 
 float autoScale(shape* s, int screen_width, int screen_height, float distance) {
-	float soft_limit = 0.7f;
    	float max_screen_x = 0, max_screen_y = 0;  	
 
 	for (int i = 0; i < s->point_count; i++) {
@@ -203,8 +205,8 @@ float autoScale(shape* s, int screen_width, int screen_height, float distance) {
 		max_screen_y = fmaxf(max_screen_y, fabsf(projected.y));
 	}
 
-	float scale_x = (screen_width * soft_limit / 2) / max_screen_x;
-	float scale_y = (screen_height * soft_limit / 2) / max_screen_y;
+	float scale_x = (screen_width * SOFT_LIMIT_FACTOR / 2) / max_screen_x;
+	float scale_y = (screen_height * SOFT_LIMIT_FACTOR / 2) / max_screen_y;
 
 	return fminf(scale_x, scale_y);
 }
@@ -261,7 +263,7 @@ int main(int argc, char *argv[]) {
         
         angle += 0.1f; 
         temp_object = object;
-		scale = autoScale(&temp_object, COLS, LINES, 5.0f);
+		scale = autoScale(&temp_object, COLS, LINES, PROJECTION_DISTANCE);
 		
 		for (int j = 0; j < object.point_count; j++) {
 			vec3 translated = {
@@ -290,8 +292,8 @@ int main(int argc, char *argv[]) {
 			vec3 start_3d = temp_object.points[start_index];
 			vec3 end_3d = temp_object.points[end_index];
             
-            vec2 start_2d = project3Dto2D(start_3d, 5.0f);
-            vec2 end_2d = project3Dto2D(end_3d, 5.0f);
+            vec2 start_2d = project3Dto2D(start_3d, PROJECTION_DISTANCE);
+            vec2 end_2d = project3Dto2D(end_3d, PROJECTION_DISTANCE);
             
             vec2 start_screen = worldToScreen(start_2d, COLS, LINES, scale);
             vec2 end_screen = worldToScreen(end_2d, COLS, LINES, scale);
@@ -304,7 +306,7 @@ int main(int argc, char *argv[]) {
 			}
         
         refresh();
-        usleep(50000);  // ~20 FPS
+        usleep(FRAME_DELAY);  // ~20 FPS
 
         int ch = getch();
         if (ch == 'q') {
