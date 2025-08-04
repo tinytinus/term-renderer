@@ -25,7 +25,6 @@ Goals:
 #include <float.h>
 
 // getting settings and options
-#include <locale.h>
 #include <getopt.h>
 
 #define MAX_POINTS 100
@@ -212,7 +211,7 @@ void drawLine(int x0, int y0, int x1, int y1, float z0, float z1, const char* ch
 	}
 }
 
-const char* getChar(float z, float min_z, float max_z, bool nerd_font) {
+const char* getChar(float z, float min_z, float max_z) {
 	float normalized_z;
 	if (min_z == max_z) {
 		normalized_z = 0.5f;
@@ -246,7 +245,7 @@ float max_screen_x = 0, max_screen_y = 0;
 	return fminf(scale_x, scale_y);
 }
 
-int main(int argc, char *argv[]) 
+int main(int argc, char *argv[]) { 
 	int current_point = -1;
 	
 	char* filename = "shape.csv";	
@@ -335,7 +334,7 @@ int main(int argc, char *argv[])
             vec2 end_screen = worldToScreen(end_2d, COLS, LINES, scale);
 
 			float avg_z = (temp_object.points[start_index].z + temp_object.points[end_index].z) / 2.0f;
-			const char* line_char = getChar(avg_z, temp_object.min_z, temp_object.max_z, nerd_font);
+			const char* line_char = getChar(avg_z, temp_object.min_z, temp_object.max_z);
 
             drawLine((int)start_screen.x, (int)start_screen.y, (int)end_screen.x, (int)end_screen.y,
 					 start_3d.z, end_3d.z, line_char, temp_object.edges[i].color_pair);
