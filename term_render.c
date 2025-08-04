@@ -10,15 +10,23 @@ Goals:
 
 */
 
+// visuals 
 #include <ncurses.h>
+
+// general IO and code things
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+
+// expanded posibilitys with data types
 #include <string.h>
 #include <stdbool.h>
-#include <getopt.h>
 #include <float.h>
+
+// getting settings and options
+#include <locale.h>
+#include <getopt.h>
 
 #define MAX_POINTS 100
 #define PROJECTION_DISTANCE 5.0f
@@ -212,21 +220,15 @@ const char* getChar(float z, float min_z, float max_z, bool nerd_font) {
 		normalized_z = (z - min_z) / (max_z - min_z);
 	}
 
-	if (nerd_font) {
-		if (normalized_z < 0.2f) return "█";
-        else if (normalized_z < 0.4f) return "▓";
-        else if (normalized_z < 0.6f) return "▒";
-        else if (normalized_z < 0.8f) return "░";
-        else return ".";
-	} else {
-		if (normalized_z < 0.2f) return "#";
-        else if (normalized_z < 0.4f) return "@";
-        else if (normalized_z < 0.6f) return "%";
-        else if (normalized_z < 0.8f) return "+";
-		else if (normalized_z < 1.0f) return "=";
-		else if (normalized_z < 1.2f) return "-";
-        else return ".";
-	}
+
+	if (normalized_z < 0.2f) return "#";
+	else if (normalized_z < 0.4f) return "@";
+	else if (normalized_z < 0.6f) return "%";
+	else if (normalized_z < 0.8f) return "+";
+	else if (normalized_z < 1.0f) return "=";
+	else if (normalized_z < 1.2f) return "-";
+	else return ".";
+
 }
 
 float autoScale(shape* s, int screen_width, int screen_height, float distance) {
@@ -244,19 +246,14 @@ float max_screen_x = 0, max_screen_y = 0;
 	return fminf(scale_x, scale_y);
 }
 
-int main(int argc, char *argv[]) {
-
-	bool nerd_font = false;
+int main(int argc, char *argv[]) 
 	int current_point = -1;
 	
 	char* filename = "shape.csv";	
 	int opt;
 
-	while ((opt = getopt(argc, argv, "nf:")) != -1) {
+	while ((opt = getopt(argc, argv, "f:")) != -1) {
 		switch (opt) {
-			case 'n':
-				nerd_font = true;
-				break;
 			case 'f':
 				filename = optarg;
 				break;
