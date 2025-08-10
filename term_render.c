@@ -236,7 +236,7 @@ const char* getChar(float z, float min_z, float max_z) {
 }
 
 float autoScale(shape* s, int screen_width, int screen_height, float distance) {
-float max_screen_x = 0, max_screen_y = 0;  	
+	float max_screen_x = 0, max_screen_y = 0;  	
 
 	for (int i = 0; i < s->point_count; i++) {
 		vec2 projected = project3Dto2D(s->points[i], distance);
@@ -262,13 +262,13 @@ int main(int argc, char *argv[]) {
 				filename = optarg;
 				break;
 			case '?':
-				fprintf(stderr, "Usage: %s [-d] [-f filename]\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-f filename]\n", argv[0]);
 				exit(1);
 		}
 	}
 
-    initscr();
-    noecho();
+    initscr(); 
+	noecho();
     curs_set(FALSE);
     timeout(0);
 	cbreak();
