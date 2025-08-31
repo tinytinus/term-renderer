@@ -31,7 +31,7 @@ Because they are so simple there is not a lot more to say.
  In short i draw a line between two points and the check for each 'tile' if it lies on that line 
 ```
     y1 - y0
-y = _______ (x - x0) + y0
+y = ------- (x - x0) + y0
     x1 - x0
 ```
 i took this math from Wikipedia, for a real explanation see [Bresenham's line algorithm](https://en.wikipedia.org/wiki/Bresenham's_line_algorithm).

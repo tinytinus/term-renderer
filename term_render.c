@@ -3,8 +3,8 @@
 
 Goals:
 - render 3-dimensional shapes spinning around
-- use the best shaped charchtr instead of just plain 1
-- csv rendering
+- use the best shaped charchter instead of just plain 1
+- csv and .shape rendering
 - color
 - edit mode
 

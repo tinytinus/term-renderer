@@ -1,0 +1,45 @@
+# Spiral tower
+vertex b0  1, 0, 0
+vertex b1  0, 0, 1
+vertex b2 -1, 0, 0
+vertex b3  0, 0,-1
+
+vertex m0  0.7, 1, 0.7
+vertex m1 -0.7, 1, 0.7
+vertex m2 -0.7, 1,-0.7
+vertex m3  0.7, 1,-0.7
+
+vertex t0  0, 2, 1
+vertex t1 -1, 2, 0
+vertex t2  0, 2,-1
+vertex t3  1, 2, 0
+
+# Base level
+edge b0-b1 color=2
+edge b1-b2 color=2
+edge b2-b3 color=2
+edge b3-b0 color=2
+
+# Vertical connections
+edge b0-m0 color=3
+edge b1-m1 color=3
+edge b2-m2 color=3
+edge b3-m3 color=3
+
+# Middle level
+edge m0-m1 color=4
+edge m1-m2 color=4
+edge m2-m3 color=4
+edge m3-m0 color=4
+
+# Upper connections
+edge m0-t0 color=5
+edge m1-t1 color=5
+edge m2-t2 color=5
+edge m3-t3 color=5
+
+# Top level
+edge t0-t1 color=6
+edge t1-t2 color=6
+edge t2-t3 color=6
+edge t3-t0 color=6

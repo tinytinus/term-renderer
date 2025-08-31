@@ -1,0 +1,25 @@
+# Diamond shape
+vertex top    0, 2, 0
+vertex north  0, 0, 1
+vertex east   1, 0, 0
+vertex south  0, 0,-1
+vertex west  -1, 0, 0
+vertex bottom 0,-2, 0
+
+# Top pyramid
+edge top-north color=5
+edge top-east  color=5
+edge top-south color=5
+edge top-west  color=5
+
+# Middle ring
+edge north-east color=6
+edge east-south color=6
+edge south-west color=6
+edge west-north color=6
+
+# Bottom pyramid
+edge bottom-north color=7
+edge bottom-east  color=7
+edge bottom-south color=7
+edge bottom-west  color=7

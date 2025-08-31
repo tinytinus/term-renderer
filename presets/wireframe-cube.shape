@@ -1,0 +1,27 @@
+# Wireframe cube
+vertex front_tl -1, 1,-1
+vertex front_tr  1, 1,-1  
+vertex front_bl -1,-1,-1
+vertex front_br  1,-1,-1
+vertex back_tl  -1, 1, 1
+vertex back_tr   1, 1, 1
+vertex back_bl  -1,-1, 1
+vertex back_br   1,-1, 1
+
+# Front face
+edge front_tl-front_tr color=2
+edge front_tr-front_br color=2
+edge front_br-front_bl color=2
+edge front_bl-front_tl color=2
+
+# Back face  
+edge back_tl-back_tr color=3
+edge back_tr-back_br color=3
+edge back_br-back_bl color=3
+edge back_bl-back_tl color=3
+
+# Connecting edges
+edge front_tl-back_tl color=4
+edge front_tr-back_tr color=4
+edge front_bl-back_bl color=4
+edge front_br-back_br color=4
