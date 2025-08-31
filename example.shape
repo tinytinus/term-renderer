@@ -1,0 +1,17 @@
+# Comments start with #
+# vertex <name> <x>,<y>,<z>
+# edge <vertex1>-<vertex2> [color=<num>]
+# group <name> { ... }
+
+# Rainbow Triangle
+vertex v0  0.0, 0.3, 0.5
+vertex v1  0.5,-0.3, 0.0
+vertex v2 -0.5,-0.3, 0.0
+vertex v3  0.0,-0.3, 1.0
+
+edge v0-v1 color=2
+edge v1-v2 color=3
+edge v2-v0 color=4
+edge v3-v0 color=5
+edge v3-v1 color=6
+edge v3-v2 color=7

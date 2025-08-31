@@ -17,6 +17,7 @@ Goals:
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/select.h>
 #include <unistd.h>
 
 // expanded posibilitys with data types
@@ -135,6 +136,122 @@ int loadShapeCsv(char *filename, shape *s) {
       }
     }
   }
+  fclose(file);
+  return 1;
+}
+
+int loadShape(char *filename, shape *s) {
+  FILE *file = fopen(filename, "r");
+  if (!file) {
+    perror("fopen");
+    return 0;
+  }
+
+  if (!strstr(filename, ".shape")) {
+    if (strstr(filename, ".csv"))
+      loadShapeCsv(filename, s);
+    else {
+      perror("fopen");
+      return 0;
+    }
+  }
+
+  typedef struct {
+    char name[64];
+    vec3 point;
+  } named_vertex;
+
+  named_vertex vertices[MAX_POINTS];
+  int vertex_count = 0;
+
+  s->min_z = FLT_MAX;
+  s->max_z = -FLT_MAX;
+  s->point_count = 0;
+  s->edge_count = 0;
+
+  char line[LINE_LENGTH];
+  int line_num = 0;
+
+  while (fgets(line, sizeof(line), file)) {
+    line_num++;
+
+    if (line[0] == '#' || line[0] == '\n' || line[0] == '\r')
+      continue;
+
+    line[strcspn(line, "\n\r")] = '\0';
+
+    if (strncmp(line, "vertex", 6) == 0) {
+      char name[64];
+      float x, y, z;
+
+      if (sscanf(line, "vertex %63s %f,%f,%f", name, &x, &y, &z) != 4) {
+        fprintf(stderr, "Invalid vertex syntax at line %d\n", line_num);
+        fclose(file);
+        return 0;
+      }
+
+      if (vertex_count >= MAX_POINTS) {
+        fprintf(stderr, "Too many vertices at line %d\n", line_num);
+        break;
+      }
+
+      strcpy(vertices[vertex_count].name, name);
+      vertices[vertex_count].point = (vec3){x, y, z};
+
+      if (z < s->min_z)
+        s->min_z = z;
+      if (z > s->max_z)
+        s->max_z = z;
+
+      vertex_count++;
+
+    } else if (strncmp(line, "edge", 4) == 0) {
+      char vertex1[64], vertex2[64];
+      int color = 1;
+
+      if (sscanf(line, "edge %63[^-]-%63s color=%d", vertex1, vertex2, &color) != 3) {
+        if (sscanf(line, "edge %63[^-]-%63s", vertex1, vertex2) != 2) {
+          fprintf(stderr, "Invalid edge syntax at line %d\n", line_num);
+          continue;
+        }
+      }
+
+      int start_idx = -1, end_idx = -1;
+      for (int i = 0; i < vertex_count; i++) {
+        if (strcmp(vertices[i].name, vertex1) == 0)
+          start_idx = i;
+        if (strcmp(vertices[i].name, vertex2) == 0)
+          end_idx = i;
+      }
+
+      if (start_idx == -1) {
+        fprintf(stderr, "Unknown vertex '%s' at line %d\n", vertex1, line_num);
+        continue;
+      }
+      if (end_idx == -1) {
+        fprintf(stderr, "Unknown vertex '%s' at line %d\n", vertex2, line_num);
+        continue;
+      }
+
+      if (s->edge_count >= MAX_POINTS * 2) {
+        fprintf(stderr, "Too many edges at line %d\n", line_num);
+        break;
+      }
+
+      color = color > 9 ? 9 : (color < 1 ? 1 : color);
+
+      s->edges[s->edge_count++] = (edge){start_idx, end_idx, color};
+
+    } else {
+      fprintf(stderr, "Unknown command at line %d: %s\n", line_num, line);
+    }
+  }
+
+  for (int i = 0; i < vertex_count; i++) {
+    s->points[i] = vertices[i].point;
+  }
+  s->point_count = vertex_count;
+
   fclose(file);
   return 1;
 }
@@ -263,7 +380,7 @@ float autoScale(shape *s, int screen_width, int screen_height, float distance) {
 int main(int argc, char *argv[]) {
   int current_point = -1;
 
-  char *filename = "shape.csv";
+  char *filename = "example.shape";
   int opt;
 
   while ((opt = getopt(argc, argv, "f:")) != -1) {
@@ -297,7 +414,7 @@ int main(int argc, char *argv[]) {
   shape object;
   shape temp_object;
 
-  if (!loadShapeCsv(filename, &object)) {
+  if (!loadShape(filename, &object)) {
     endwin();
     perror("Failed to load shape\n");
     return 1;
@@ -355,7 +472,8 @@ int main(int argc, char *argv[]) {
     }
 
     refresh();
-    usleep(FRAME_DELAY); // ~20 FPS
+    struct timeval tv = {0, FRAME_DELAY};   // 16.67ms in microseconds
+    select(0, NULL, NULL, NULL, &tv); 
 
     int ch = getch();
     if (ch == 'q') {
