@@ -4,7 +4,7 @@ A simple C and nCurses terminal shape-renderer
 
 Usage :
 ```
-./term_renderer [-f filename]
+./term_renderer [-f filename.shape | filename.csv]
 ```
 
 ## TODO:
@@ -13,10 +13,11 @@ Usage :
  - [x] automatic scaling
  - [x] the right symbol
  - [x] CSV rendering system
+ - [x] custom more readable .shape
  - [x] correct drawing order
 
 ## shapes
-the shapes consist of 3 parts: the points, the edges (aka. lines) and the colors.
+the shapes consist of 3 parts: the points, the edges (aka. lines) and the colours.
 
 ### points 
 
@@ -70,9 +71,34 @@ float cos = cosf(angle);
 
  The reason why Y stays the same is personal prefrence, i decided that it would look good if the shapes spun around their Y axis.
 
+## .shape
+
+ originally i used CSV for this project but as i moved on CSV became less and less readable, this is why i made my own custom filetype .shape
+ .shape has really easy syntax
+```
+# Comments start with #
+# vertex <name> <x>,<y>,<z>
+# edge <vertex1>-<vertex2> [color=<num>]
+
+vertex v0  0.0, 0.3, 0.5
+vertex v1  0.5,-0.3, 0.0
+vertex v2 -0.5,-0.3, 0.0
+vertex v3  0.0,-0.3, 1.0
+
+edge v0-v1 color=2
+edge v1-v2 color=3
+edge v2-v0 color=4
+edge v3-v0 color=5
+edge v3-v1 color=6
+edge v3-v2 color=7
+
+```
+ you have 2 commands:
+	- vertex, creates a vertex(point) with a name at the location x, y, z
+	- edge, creates a edge between 2 points (by name) with a color
+
 ## CSV
 
- Originally i wanted to render SVG files but as i continued working on the project i decided that i wanted 3d shapes, so i needed something different. ~also SVG's are really hard~
  CSV stands for "comma separated values" and is used to store data in collunms like this 
 ```
 first_name,second_name,age
@@ -84,15 +110,13 @@ or like this
 NAME
 alice,jones
 bob,smith
+
 AGE
 27
 30
 ```
 
 ### how i used CSV's
-
- The program reads it data from shape.csv , currently this is hardcoded in.
- If other people want to make shapes i will make it so that you can choose the file, but for now just use shape.csv
  
  First we have a part named POINTS:
 ```
@@ -120,25 +144,23 @@ EDGES
 > [NOTE]  
 > I put in a max limit of 100 points and 200 lines, if you want you can change this in the code if you want.
 
-### some fun CSV's
+### some fun shapes's
 
  Rainbow piramid:
 ```
+# Rainbow Piramid
+vertex v0  0.0, 0.3, 0.5
+vertex v1  0.5,-0.3, 0.0
+vertex v2 -0.5,-0.3, 0.0
+vertex v3  0.0,-0.3, 1.0
 
-POINTS
-0.0,0.3,0.5
-0.5,-0.3,0.0
--0.5,-0.3,0.0
-0.0,-0.3,1.0
+edge v0-v1 color=2
+edge v1-v2 color=3
+edge v2-v0 color=4
+edge v3-v0 color=5
+edge v3-v1 color=6
+edge v3-v2 color=7
 
-EDGES
-0,1,2
-1,2,3
-2,0,4
-
-3,0,5
-3,1,6
-3,2,7
 ```
 
 

@@ -1,9 +1,8 @@
 # Comments start with #
 # vertex <name> <x>,<y>,<z>
 # edge <vertex1>-<vertex2> [color=<num>]
-# group <name> { ... }
 
-# Rainbow Triangle
+# Rainbow Piramid
 vertex v0  0.0, 0.3, 0.5
 vertex v1  0.5,-0.3, 0.0
 vertex v2 -0.5,-0.3, 0.0
