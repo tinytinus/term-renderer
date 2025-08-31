@@ -140,7 +140,7 @@ int loadShapeCsv(char *filename, shape *s) {
   return 1;
 }
 
-int loadShape(char *filename, shape *s) {
+int loadShapeFile(char *filename, shape *s) {
   FILE *file = fopen(filename, "r");
   if (!file) {
     perror("fopen");
@@ -148,13 +148,9 @@ int loadShape(char *filename, shape *s) {
   }
 
   if (!strstr(filename, ".shape")) {
-    if (strstr(filename, ".csv"))
-      loadShapeCsv(filename, s);
-    else {
       perror("fopen");
       return 0;
     }
-  }
 
   typedef struct {
     char name[64];
@@ -254,6 +250,17 @@ int loadShape(char *filename, shape *s) {
 
   fclose(file);
   return 1;
+}
+
+int loadShape(char *filename, shape *s) {
+    if (strstr(filename, ".shape")) {
+        return loadShapeFile(filename, s);
+    } else if (strstr(filename, ".csv")) {
+        return loadShapeCsv(filename, s);
+    } else {
+        fprintf(stderr, "Unsupported file format. Use .shape or .csv\n");
+        return 0;
+    }
 }
 
 vec3 get3DShapeCenter(shape *s) {
